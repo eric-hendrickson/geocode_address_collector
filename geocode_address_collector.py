@@ -49,19 +49,18 @@ def checking_geocode_addresses(unique_addresses, csv_path):
                         unique_addresses.remove(raw_address)
                 number_csv_addresses += 1
             csvfile.close()
-        number_unique_addresses = len(unique_addresses)
         print(
             csv_addresses_string(
                 number_csv_addresses,
                 number_no_geographic_data,
-                number_unique_addresses,
+                len(unique_addresses),
                 csv_path
             )
         )
     else:
         print(
             'File not present. ' + \
-            unique_addresses_message_string(number_unique_addresses)
+            unique_addresses_message_string(len(unique_addresses))
         )
 
 def geocode_addresses(unique_addresses, user_agent='check'):
@@ -122,8 +121,12 @@ def main(argv):
         # Geocoded csv addresses path
         csv_path = 'geocoded_addresses.csv'
         # Written csv headers
-        csv_headers = \
-            ['residential_address', 'geocoded_address', 'latitude', 'longitude']
+        csv_headers = [
+            'residential_address',
+            'geocoded_address',
+            'latitude',
+            'longitude'
+        ]
 
         print('Opening `' + txt_path + '`...')
         unique_addresses = []
@@ -131,10 +134,9 @@ def main(argv):
             for line in file:
                 unique_addresses.append(line.strip())
 
-        number_unique_addresses = len(unique_addresses)
         print(
             'Total number of addresses in `' + txt_path + '`: ' + \
-            str(number_unique_addresses)
+            str(len(unique_addresses))
         )
         
         print('Checking `' + csv_path + '`...')
