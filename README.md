@@ -17,8 +17,8 @@ This script uses [Nominatim](https://wiki.openstreetmap.org/wiki/Nominatim), a s
 
 OpenStreetMap has a usage policy for Nominatim, which you should review [here](https://operations.osmfoundation.org/policies/nominatim/), but here are the highlights (as of June 18, 2024, footnotes are mine):
 
-- No heavy uses (an absolute maximum of 1 request per second)[^a].
-- Provide a valid HTTP Referer or User-Agent identifying the application (stock User-Agents as set by http libraries will not do)[^b].
+- No heavy uses (an absolute maximum of 1 request per second).[^a]
+- Provide a valid HTTP Referer or User-Agent identifying the application (stock User-Agents as set by http libraries will not do).[^b]
 - Clearly display [attribution](https://osmfoundation.org/wiki/Licence/Attribution_Guidelines) as suitable for your medium.
 - Data is provided under the [ODbL](https://www.openstreetmap.org/copyright) license which requires to share alike (although small extractions are likely to be covered by fair usage / fair dealing).
 
