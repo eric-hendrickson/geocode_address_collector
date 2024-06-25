@@ -77,8 +77,6 @@ def geocode_addresses(
     non_geocodable_rows_written = 0
     app = Nominatim(user_agent=user_agent)
     for index, address in enumerate(unique_addresses):
-        if index == 30:
-            break
         percentage = 100 * index / number_of_addresses
         sys.stdout.write('\r')
         try:
@@ -154,6 +152,8 @@ def completed_geocode_message_string(
         'that could not be geocoded to `' + no_geocodes_path + '`.'
 
 def main(argv):
+    time_start = time.time()
+
     # Nominatim user agent
     user_agent = 'check' if len(argv) == 0 else argv[0]
     # Unique addresses txt path
@@ -207,7 +207,7 @@ def main(argv):
             non_geocodable_rows_written += 1
         no_geocodes_file.close()
     
-    # Complete
+    # Completed geocoding and writing to file message
     print(
         completed_geocode_message_string(
             geocoded_rows_written,
@@ -216,6 +216,9 @@ def main(argv):
             no_geocodes_path
         )
     )
+
+    print('Program took ' + str(time.time() - time_start) + ' seconds to complete.')
+
 
 if __name__ == '__main__':
     main(sys.argv[1:])
