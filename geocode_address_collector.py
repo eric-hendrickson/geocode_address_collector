@@ -68,7 +68,7 @@ def geocode_addresses(
         unique_addresses,
         csv_path, no_geocodes_path,
         user_agent='check', break_time=1.1):
-    percentage_bar_width = os.get_terminal_size().columns - 12
+    percentage_bar_width = os.get_terminal_size().columns - 10
     rows_with_data = []
     rows_without_data = []
     if os.path.exists(no_geocodes_path):
@@ -80,8 +80,8 @@ def geocode_addresses(
     for index, address in enumerate(unique_addresses):
         bar_multiplier = index / len(unique_addresses)
         percentage = bar_multiplier * 100
-        number_of_bars = math.ceil(bar_multiplier * percentage_bar_width)
-        sys.stdout.write('\r')
+        number_of_bars = bar_multiplier * percentage_bar_width
+        progress_width = 1 if number_of_bars < 1 else math.round(number_of_bars)
         try:
             # Get geocoded location
             location = do_geocode(app, address)
@@ -98,9 +98,10 @@ def geocode_addresses(
                 rows_without_data.append('%s' % address)
             
             # Update percentage bar
+            sys.stdout.write('\r')
             sys.stdout.write(
-                "[{:{}}] {:.2f}%".format(
-                    "=" * number_of_bars,
+                "[{:{}}] {:5.2f}%".format(
+                    "=" * progress_width,
                     percentage_bar_width - 1,
                     percentage
                 )
