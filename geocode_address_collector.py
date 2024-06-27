@@ -2,7 +2,6 @@ import csv
 import time
 import sys
 import os
-import math
 from datetime import datetime
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut
@@ -81,7 +80,7 @@ def geocode_addresses(
         bar_multiplier = index / len(unique_addresses)
         percentage = bar_multiplier * 100
         number_of_bars = bar_multiplier * percentage_bar_width
-        progress_width = 1 if number_of_bars < 1 else math.round(number_of_bars)
+        progress_width = 1 if number_of_bars < 1 else round(number_of_bars)
         try:
             # Get geocoded location
             location = do_geocode(app, address)
