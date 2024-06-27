@@ -70,12 +70,9 @@ def geocode_addresses(
     percentage_bar_width = os.get_terminal_size().columns - 10
     rows_with_data = []
     rows_without_data = []
-    if os.path.exists(no_geocodes_path):
-        os.remove(no_geocodes_path)
     geocoded_rows_written = 0
     non_geocodable_rows_written = 0
     app = Nominatim(user_agent=user_agent)
-    no_geocodes_file = open(no_geocodes_path, 'a')
     for index, address in enumerate(unique_addresses):
         bar_multiplier = index / len(unique_addresses)
         percentage = bar_multiplier * 100
@@ -188,6 +185,8 @@ def main(argv):
     
     # print('Checking `' + csv_path + '`...')
     # checking_geocode_addresses(unique_addresses, csv_path)
+    if os.path.exists(no_geocodes_path):
+        os.remove(no_geocodes_path)
     
     print('Starting to geocode addresses...')
     with open(csv_path, 'w') as csv_file:
