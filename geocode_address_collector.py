@@ -14,21 +14,27 @@ def do_geocode(app, address, attempt=1, max_attempts=5):
             return do_geocode(address, attempt=attempt+1)
         raise
 
+def to_be(num):
+    return 'is' if num == 1 else 'are'
+
+def address(num):
+    return 'address' if num == 1 else 'addresses'
+
 def unique_addresses_message_string(num):
-    to_be = 'is ' if num == 1 else 'are '
-    address = 'address ' if num == 1 else 'addresses '
-    segment = 'This means there ' + to_be + str(num) + ' unique '
-    return segment + address + 'to write.'
+    return 'This means there {} {} unique {} to write.'.format(
+        to_be(num), num, address(num)
+    )
 
 def csv_addresses_string(csv_num, no_geographic_num, unique_num, csv_path):
-    to_be = 'is ' if csv_num == 1 else 'are '
-    address = ' address ' if csv_num == 1 else ' addresses '
-    segment = 'There ' + to_be + str(csv_num) + address + 'in `'
-    segment += csv_path + '`, including ' + str(no_geographic_num) + ' with '
-    segment += 'no geographic data. '
-    return segment + unique_addresses_message_string(unique_num)
+    return 'There {} {} {} in `{}`. {}'.format(
+        to_be(csv_num),
+        csv_num,
+        address(csv_num),
+        csv_path,
+        unique_addresses_message_string(unique_num)
+    )
 
-def checking_geocode_addresses(unique_addresses, csv_path):
+def checking_geocode_addresses(unique_addresses, csv_headers, csv_path):
     number_csv_addresses = 0
     number_no_geographic_data = 0
     if os.path.isfile(csv_path):
@@ -38,16 +44,9 @@ def checking_geocode_addresses(unique_addresses, csv_path):
                 if index == 0:
                     continue
                 raw_address = row[0]
-                no_geographical_data = \
-                    row[1] == 'None' or row[2] == 'None' or row[3] == 'None'
-                if no_geographical_data:
-                    number_no_geographic_data += 1
-                    if raw_address not in unique_addresses:
-                        unique_addresses.append(raw_address)
-                else:
-                    while raw_address in unique_addresses:
-                        unique_addresses.remove(raw_address)
-                number_csv_addresses += 1
+                while raw_address in unique_addresses:
+                    unique_addresses.remove(raw_address)
+                    number_csv_addresses += 1
             csv_file.close()
         print(
             csv_addresses_string(
@@ -59,25 +58,65 @@ def checking_geocode_addresses(unique_addresses, csv_path):
         )
     else:
         print(
-            'File not present. ' + \
-            unique_addresses_message_string(len(unique_addresses))
+            'File not present. {}'.format(
+                unique_addresses_message_string(len(unique_addresses))
+            )
         )
+        print('Creating `{}` now.'.format(csv_path))
+        with open(csv_path, 'w') as csv_file:
+            csv_writer = csv.writer(csv_file, delimiter=',')
+            csv_writer.writerow(csv_headers)
+
+def update_percentage_bar(index, num_unique_addresses):
+    percentage_bar_width = os.get_terminal_size().columns - 10
+    bar_multiplier = index / num_unique_addresses
+
+    percentage = 100 if index == num_unique_addresses - 1 \
+        else bar_multiplier * 100
+    number_of_bars = bar_multiplier * percentage_bar_width
+    progress_width = 1 if number_of_bars < 1 else round(number_of_bars)
+
+    sys.stdout.write('\r')
+    sys.stdout.write(
+        "[{:{}}] {:5.2f}%".format(
+            "=" * progress_width,
+            percentage_bar_width - 1,
+            percentage
+        )
+    )
+    sys.stdout.flush()
+
+def write_to_geocoded_addresses(
+        rows_with_data, geocoded_rows_written, csv_path):
+    with open(csv_path, 'a') as csv_file:
+        csv_writer = csv.writer(csv_file, delimiter=',')
+        for row in rows_with_data:
+            csv_writer.writerow(row)
+            rows_with_data.remove(row)
+            geocoded_rows_written += 1
+    return geocoded_rows_written
+
+def write_to_no_geocodes(
+        rows_without_data, non_geocodable_rows_written, no_geocodes_path):
+    with open(no_geocodes_path, 'a') as no_geocodes_file:
+        for row in rows_without_data:
+            no_geocodes_file.write("%s\n" % row)
+            rows_without_data.remove(row)
+            non_geocodable_rows_written += 1
+    return non_geocodable_rows_written
 
 def geocode_addresses(
         unique_addresses,
         csv_path, no_geocodes_path,
         user_agent='check', break_time=1.1):
-    percentage_bar_width = os.get_terminal_size().columns - 10
+    app = Nominatim(user_agent=user_agent)
+    warning_string = 'You\'re going to have to run this script again, ' + \
+        'but at least you stored some rows.'
     rows_with_data = []
     rows_without_data = []
     geocoded_rows_written = 0
     non_geocodable_rows_written = 0
-    app = Nominatim(user_agent=user_agent)
-    for index, address in enumerate(unique_addresses):
-        bar_multiplier = index / len(unique_addresses)
-        percentage = bar_multiplier * 100
-        number_of_bars = bar_multiplier * percentage_bar_width
-        progress_width = 1 if number_of_bars < 1 else round(number_of_bars)
+    for index, address in enumerate(unique_addresses):        
         try:
             # Get geocoded location
             location = do_geocode(app, address)
@@ -94,44 +133,29 @@ def geocode_addresses(
                 rows_without_data.append('%s' % address)
             
             # Update percentage bar
-            sys.stdout.write('\r')
-            sys.stdout.write(
-                "[{:{}}] {:5.2f}%".format(
-                    "=" * progress_width,
-                    percentage_bar_width - 1,
-                    percentage
-                )
-            )
-            sys.stdout.flush()
+            update_percentage_bar(index, len(unique_addresses))
 
             # While waiting, write to file
             time_end = time.time() + break_time
             while time.time() < time_end:
                 if len(rows_with_data) > 0:
-                    with open(csv_path, 'a') as csv_file:
-                        csv_writer = csv.writer(csv_file, delimiter=',')
-                        for row in rows_with_data:
-                            csv_writer.writerow(row)
-                            rows_with_data.remove(row)
-                            geocoded_rows_written += 1
+                    geocoded_rows_written = write_to_geocoded_addresses(
+                        rows_with_data, geocoded_rows_written, csv_file
+                    )
                 if len(rows_without_data) > 0:
-                    with open(no_geocodes_path, 'a') as no_geocodes_file:
-                        for row in rows_without_data:
-                            no_geocodes_file.write("%s\n" % row)
-                            rows_without_data.remove(row)
-                            non_geocodable_rows_written += 1            
+                    non_geocodable_rows_written = write_to_no_geocodes(
+                        rows_without_data,
+                        non_geocodable_rows_written,
+                        no_geocodes_path
+                    )    
         except KeyboardInterrupt:
             sys.exit(
-                '\nCtrl+C detected, geocoding stopping. ' + \
-                'You\'re going to have to run ' + \
-                'this script again, but at least you stored some rows.'
+                '\nCtrl+C detected, geocoding stopping. {}'.format(
+                    warning_string()
+                )
             )
         except Exception as e:
-            print(e)
-            print(
-                '\nWARNING: Incomplete. You\'re going to have to run ' + \
-                'this script again, but at least you stored some rows.'
-            )
+            print('{}\n{}'.format(e, warning_string()))
             break
     return (
         rows_with_data,
@@ -144,14 +168,13 @@ def completed_geocode_message_string(
         num_addresses_with_data,
         num_addresses_without_data,
         csv_path, no_geocodes_path):
-    geocoded_address = 'address ' \
-        if num_addresses_with_data == 1 else 'addresses '
-    non_geocoded_address = 'address ' \
-        if num_addresses_without_data == 1 else 'addresses '
-    return '\nCompleted geocoding. Wrote ' + str(num_addresses_with_data) + \
-        ' geocoded ' + geocoded_address + 'to `' + csv_path + '` and ' + \
-        str(num_addresses_without_data) + ' ' + non_geocoded_address + \
-        'that could not be geocoded to `' + no_geocodes_path + '`.'
+    return '\nCompleted geocoding. Wrote {} geocoded {} to `{}` and '.format(
+        num_addresses_with_data, address(num_addresses_with_data), csv_path
+    ) + '{} {} that could not be geocoded to `{}`.'.format(
+        num_addresses_without_data,
+        address(num_addresses_without_data),
+        no_geocodes_path
+    )
 
 def main(argv):
     time_start = time.time()
@@ -172,26 +195,32 @@ def main(argv):
         'longitude'
     ]
 
-    print('Opening `' + txt_path + '`...')
+    # Opening unique addresses txt file
+    print('Opening `{}`...'.format(txt_path))
+    # If the unique addresses txt file does not exist, we're going to have to exit
+    if not os.path.exists(txt_path):
+        sys.exit(
+            'File does not exist, therefore no addresses can be geocoded.'
+        )
     unique_addresses = []
     with open(txt_path) as file:
         for line in file:
             unique_addresses.append(line.strip())
 
+    # Number of addresses in unique addresses file
     print(
-        'Total number of addresses in `' + txt_path + '`: ' + \
-        str(len(unique_addresses))
+        'Total number of addresses in `{}`: {}'.format(
+            txt_path, str(len(unique_addresses))
+        )
     )
     
-    # print('Checking `' + csv_path + '`...')
-    # checking_geocode_addresses(unique_addresses, csv_path)
+    # Checking geocoded csv to see how many addresses have already been written
+    print('Checking `{}`...'.format(csv_path))
+    checking_geocode_addresses(unique_addresses, csv_headers, csv_path)
     if os.path.exists(no_geocodes_path):
         os.remove(no_geocodes_path)
     
     print('Starting to geocode addresses...')
-    with open(csv_path, 'w') as csv_file:
-        csv_writer = csv.writer(csv_file, delimiter=',')
-        csv_writer.writerow(csv_headers)
     rows_with_data, rows_without_data, \
     geocoded_rows_written, non_geocodable_rows_written = \
         geocode_addresses(
@@ -200,15 +229,12 @@ def main(argv):
     
     # Completed geocoding and writing remaining values to csv and
     # addresses without geodata file
-    with open(csv_path, 'a') as csv_file:
-        csv_writer = csv.writer(csv_file, delimiter=',')
-        for row in rows_with_data:
-            csv_writer.writerow(row)
-            geocoded_rows_written += 1
-    with open(no_geocodes_path, 'a') as no_geocodes_file:
-        for row in rows_without_data:
-            no_geocodes_file.write("%s\n" % row)
-            non_geocodable_rows_written += 1
+    geocoded_rows_written = write_to_geocoded_addresses(
+        rows_with_data, geocoded_rows_written, csv_path
+    )
+    non_geocodable_rows_written = write_to_no_geocodes(
+        rows_without_data, non_geocodable_rows_written, no_geocodes_path
+    )  
     
     # Completed geocoding and writing to file message
     print(
@@ -220,10 +246,12 @@ def main(argv):
         )
     )
 
-    print('Program took ' + '{:.3f}'.format(time.time() - time_start) + \
-            ' seconds to complete.')
-    print('(Time ended: ' + \
-            datetime.now().strftime("%Y/%m/%d, %H:%M:%S") + ')')
+    print('Program took {:.3f} seconds to complete'.format(
+        time.time() - time_start
+    ))
+    print('(Time ended: {})'.format(
+        datetime.now().strftime("%Y/%m/%d, %H:%M:%S")
+    ))
 
 if __name__ == '__main__':
     main(sys.argv[1:])
