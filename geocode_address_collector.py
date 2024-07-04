@@ -140,7 +140,7 @@ def geocode_addresses(
             while time.time() < time_end:
                 if len(rows_with_data) > 0:
                     geocoded_rows_written = write_to_geocoded_addresses(
-                        rows_with_data, geocoded_rows_written, csv_file
+                        rows_with_data, geocoded_rows_written, csv_path
                     )
                 if len(rows_without_data) > 0:
                     non_geocodable_rows_written = write_to_no_geocodes(
@@ -155,7 +155,7 @@ def geocode_addresses(
                 )
             )
         except Exception as e:
-            print('{}\n{}'.format(e, warning_string))
+            print('\n{}\n{}'.format(e, warning_string))
             break
     return (
         rows_with_data,
