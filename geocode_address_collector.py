@@ -151,11 +151,11 @@ def geocode_addresses(
         except KeyboardInterrupt:
             sys.exit(
                 '\nCtrl+C detected, geocoding stopping. {}'.format(
-                    warning_string()
+                    warning_string
                 )
             )
         except Exception as e:
-            print('{}\n{}'.format(e, warning_string()))
+            print('{}\n{}'.format(e, warning_string))
             break
     return (
         rows_with_data,
