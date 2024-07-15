@@ -2,13 +2,14 @@ import csv
 import time
 import sys
 import os
+from collections import defaultdict
 from datetime import datetime
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut
 
 def do_geocode(app, address, attempt=1, max_attempts=5):
     try:
-        return app.geocode(address, timeout=30)
+        return app.geocode(address, timeout=30, addressdetails=True)
     except GeocoderTimedOut:
         if attempt <= max_attempts:
             return do_geocode(address, attempt=attempt+1)
@@ -121,10 +122,11 @@ def geocode_addresses(
             # Get geocoded location
             location = do_geocode(app, address)
             if (location):
+                address_details = location.raw.get('address', {})
                 row = \
                     [
                         address,
-                        location.address,
+                        str(address_details),
                         location.latitude,
                         location.longitude
                     ]
