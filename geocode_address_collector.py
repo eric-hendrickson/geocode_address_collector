@@ -27,7 +27,8 @@ def unique_addresses_message_string(num):
         to_be(num), num, address(num)
     )
 
-def csv_addresses_string(csv_num, no_geographic_num, unique_num, geocoded_path):
+def csv_addresses_string(
+        csv_num, no_geographic_num, unique_num, geocoded_path):
     return 'There {} {} {} in `{}`. {}'.format(
         to_be(csv_num),
         csv_num,
@@ -45,9 +46,10 @@ def compare_address_content(dict1, dict2):
             return False
     return 
 
-# TODO: Find a way to get this functionality back with respect to the new lists of dicts
-# approach we are now using
-# def checking_geocode_addresses(unique_addresses, written_csv_headers, geocoded_path):
+# TODO: Find a way to get this functionality back with respect to 
+# the new lists of dicts approach we are now using
+# def checking_geocode_addresses(
+#         unique_addresses, written_csv_headers, geocoded_path):
 #     number_csv_addresses = 0
 #     number_no_geographic_data = 0
 #     if os.path.isfile(geocoded_path):
@@ -212,7 +214,9 @@ def completed_geocode_message_string(
         num_addresses_without_data,
         geocoded_path, partially_geocoded_path, no_geocodes_path):
     return '\nCompleted geocoding. Wrote {} geocoded {} to `{}`, '.format(
-        num_addresses_with_data, address(num_addresses_with_data), geocoded_path
+        num_addresses_with_data,
+        address(num_addresses_with_data),
+        geocoded_path
     ) + '{} {} with partial geocoded data to {}, and '.format(
         num_addresses_with_partial_data,
         address(num_addresses_with_partial_data),
@@ -249,13 +253,15 @@ def main(argv):
         'City',
         'State',
         'ZIP',
+        'address_details',
         'latitude',
         'longitude'
     ]
 
     # Opening unique addresses txt file
     print('Opening `{}`...'.format(unique_addresses_path))
-    # If the unique addresses txt file does not exist, we're going to have to exit
+    # If the unique addresses txt file does not exist, we're going to 
+    # have to exit
     if not os.path.exists(unique_addresses_path):
         sys.exit(
             'File does not exist, therefore no addresses can be geocoded.'
